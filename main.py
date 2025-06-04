@@ -44,7 +44,6 @@ def adicionar_frete(frete: Frete):
         cursor = conn.cursor()
 
         query = """
-        USE unilog,
         INSERT INTO fretes (
             origem, destino, valor_por_tonelada, valor_diaria,
             peso_total_carga, quantidade_caminhoes, tipo_rodado, precisa_engate
@@ -69,5 +68,8 @@ def adicionar_frete(frete: Frete):
 
         return {"status": "sucesso", "mensagem": "Frete cadastrado com sucesso."}
 
+    except mysql.connector.Error as e:
+        raise HTTPException(status_code=500, detail=f"Erro do MySQL: {e.msg}")
+
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=f"Erro geral: {str(e)}")
