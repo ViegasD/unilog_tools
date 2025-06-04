@@ -51,9 +51,10 @@ async def adicionar_frete(request: Request):
             port=int(os.getenv("DB_PORT"))
         )
         cursor = conn.cursor()
+                
+        cursor.execute("USE unilog;")
 
         query = """
-        USE unilog;
         INSERT INTO fretes (
             origem, destino, valor_por_tonelada, valor_diaria,
             peso_total_carga, quantidade_caminhoes, tipo_rodado, precisa_engate
