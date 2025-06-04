@@ -1,5 +1,5 @@
 from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel, model_validator
+from pydantic import BaseModel, field_validator, model_validator
 from typing import Optional
 import mysql.connector
 import os
@@ -20,16 +20,12 @@ class Frete(BaseModel):
     precisa_engate: bool
 
     @model_validator(mode="after")
-    def check_required_fields(cls, values):
-        peso = values.get("peso_total_carga")
-        qtd = values.get("quantidade_caminhoes")
-        tipo = values.get("tipo_rodado")
-
-        if not peso and not qtd:
-            raise ValueError("Você deve fornecer 'peso_total_carga' ou 'quantidade_caminhoes'.")
-        if qtd and not tipo:
+    def validar_campos_obrigatorios(self) -> 'Frete':
+        if self.peso_total_carga is None and self.quantidade_caminhoes is None:
+            raise ValueError("Informe 'peso_total_carga' ou 'quantidade_caminhoes'.")
+        if self.quantidade_caminhoes is not None and not self.tipo_rodado:
             raise ValueError("Se 'quantidade_caminhoes' for informado, 'tipo_rodado' também é obrigatório.")
-        return values
+        return self
 
 @app.post("/adicionar-frete")
 def adicionar_frete(frete: Frete):
