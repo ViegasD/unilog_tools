@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from pydantic import BaseModel, model_validator
 from typing import Optional
 import mysql.connector
@@ -28,8 +28,21 @@ class Frete(BaseModel):
         return self
 
 @app.post("/adicionar-frete")
-def adicionar_frete(frete: Frete):
+async def adicionar_frete(request: Request):
     try:
+        body = await request.json()
+
+        frete = Frete(
+            origem=body.get("parameters0_Value"),
+            destino=body.get("parameters1_Value"),
+            valor_por_tonelada=float(body.get("parameters2_Value")),
+            valor_diaria=float(body.get("parameters3_Value")),
+            peso_total_carga=float(body.get("parameters4_Value")) if body.get("parameters4_Value") else None,
+            quantidade_caminhoes=int(body.get("parameters5_Value")) if body.get("parameters5_Value") else None,
+            tipo_rodado=body.get("parameters6_Value"),
+            precisa_engate=bool(body.get("parameters7_Value"))
+        )
+
         conn = mysql.connector.connect(
             host=os.getenv("DB_HOST"),
             user=os.getenv("DB_USER"),
@@ -37,6 +50,7 @@ def adicionar_frete(frete: Frete):
             database=os.getenv("DB_NAME"),
             port=int(os.getenv("DB_PORT"))
         )
+        cursor = conn.cursor()
 
         query = """
         INSERT INTO fretes (
@@ -45,7 +59,7 @@ def adicionar_frete(frete: Frete):
         ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
         """
 
-        data = (
+        cursor.execute(query, (
             frete.origem,
             frete.destino,
             frete.valor_por_tonelada,
@@ -54,14 +68,12 @@ def adicionar_frete(frete: Frete):
             frete.quantidade_caminhoes,
             frete.tipo_rodado,
             int(frete.precisa_engate)
-        )
+        ))
 
-        with conn.cursor() as cursor:
-            cursor.execute("USE unilog;")  # explícito e seguro aqui
-            cursor.execute(query, data)
-            conn.commit()
-
+        conn.commit()
+        cursor.close()
         conn.close()
+
         return {"status": "sucesso", "mensagem": "Frete cadastrado com sucesso."}
 
     except mysql.connector.Error as e:
