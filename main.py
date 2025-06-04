@@ -1,5 +1,5 @@
 from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel, field_validator, model_validator
+from pydantic import BaseModel, model_validator
 from typing import Optional
 import mysql.connector
 import os
@@ -37,10 +37,8 @@ def adicionar_frete(frete: Frete):
             database=os.getenv("DB_NAME"),
             port=int(os.getenv("DB_PORT"))
         )
-        cursor = conn.cursor()
 
         query = """
-        USE unilog;
         INSERT INTO fretes (
             origem, destino, valor_por_tonelada, valor_diaria,
             peso_total_carga, quantidade_caminhoes, tipo_rodado, precisa_engate
@@ -58,15 +56,16 @@ def adicionar_frete(frete: Frete):
             int(frete.precisa_engate)
         )
 
-        cursor.execute(query, data)
-        conn.commit()
-        cursor.close()
-        conn.close()
+        with conn.cursor() as cursor:
+            cursor.execute("USE unilog;")  # explícito e seguro aqui
+            cursor.execute(query, data)
+            conn.commit()
 
+        conn.close()
         return {"status": "sucesso", "mensagem": "Frete cadastrado com sucesso."}
 
     except mysql.connector.Error as e:
-        raise HTTPException(status_code=500, detail=f"Erro do MySQL: {e.msg}")
+        return {"status": "erro_mysql", "mensagem": f"{e.msg}"}
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Erro geral: {str(e)}")
+        return {"status": "erro_geral", "mensagem": f"{str(e)}"}
