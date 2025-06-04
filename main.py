@@ -1,5 +1,5 @@
 from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel, root_validator
+from pydantic import BaseModel, model_validator
 from typing import Optional
 import mysql.connector
 import os
@@ -19,7 +19,7 @@ class Frete(BaseModel):
     tipo_rodado: Optional[str] = None
     precisa_engate: bool
 
-    @root_validator()
+    @model_validator(mode="after")
     def check_required_fields(cls, values):
         peso = values.get("peso_total_carga")
         qtd = values.get("quantidade_caminhoes")
