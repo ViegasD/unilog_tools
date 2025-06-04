@@ -53,6 +53,7 @@ async def adicionar_frete(request: Request):
         cursor = conn.cursor()
 
         query = """
+        USE unilog;
         INSERT INTO fretes (
             origem, destino, valor_por_tonelada, valor_diaria,
             peso_total_carga, quantidade_caminhoes, tipo_rodado, precisa_engate
